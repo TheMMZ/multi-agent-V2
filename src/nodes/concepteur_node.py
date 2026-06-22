@@ -36,12 +36,12 @@ def concepteur_agent_node(state: ProjectState) -> dict:
             "Exemple de format attendu :\n"
             "```mermaid\n"
             "classDiagram\n"
-            "    class Task {\n"
+            "    class Task {{\n"
             "        +int id\n"
             "        +string title\n"
             "        +bool is_completed\n"
             "        +save()\n"
-            "    }\n"
+            "    }}\n"
             "```"
         )),
         ("user", "Conçoit l'application suivante avec les diagrammes requis : {user_need}")
