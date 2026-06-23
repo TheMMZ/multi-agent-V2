@@ -30,22 +30,74 @@ def developpeur_agent_node(state: ProjectState) -> dict:
             "1. 'backend/config.py' | 2. 'backend/models.py' | 3. 'backend/routes.py' | 4. 'app.py' \n"
             "5. 'templates/index.html' | 6. 'static/style.css' | 7. 'static/app.js'"
         )),
-        ("user", "Voici les spécifications ou retours sur l'application : \n\n{specs}")
+        ("user", "Voici les spécifications sur l'application : \n\n{specs}\n\nRetours du Testeur (le cas échéant) : \n{test_logs}")
     ])
     
     specs = state.get("functional_specs")
+    test_logs = state.get("test_logs", [])
+    test_logs_str = "\n".join(test_logs) if test_logs else "Aucun retour de test pour le moment."
+    
     if not specs:
         raise ValueError("Erreur : Aucune spécification technique trouvée dans le State !")
     
     chain = prompt_template | llm_with_tools
-    response = chain.invoke({"specs": specs})
+    response = chain.invoke({"specs": specs, "test_logs": test_logs_str})
     
     code_summary = {}
     
+    import json
+    
+    # Extraction des tool_calls
+    tool_calls = response.tool_calls
+    
+    # Fallback pour Qwen/Ollama
+    if not tool_calls and response.content:
+        content_str = response.content.strip()
+        
+        # Clean markdown
+        if "```json" in content_str:
+            content_str = content_str.split("```json")[1].split("```")[0].strip()
+        elif "```" in content_str:
+            content_str = content_str.split("```")[1].split("```")[0].strip()
+            
+        # Fix qwen2.5-coder bug with trailing braces (e.g. }}} instead of }})
+        if content_str.endswith("}}}"):
+            content_str = content_str[:-1]
+            
+        try:
+            import re
+            # Extract JSON array or object using regex to ignore trailing garbage
+            match_array = re.search(r'\[\s*\{.*\}\s*\]', content_str, re.DOTALL)
+            match_obj = re.search(r'\{.*\}', content_str, re.DOTALL)
+            
+            if match_array:
+                data_list = json.loads(match_array.group(0))
+                for data in data_list:
+                    if "name" in data and "arguments" in data:
+                        tool_calls.append({"name": data["name"], "args": data["arguments"], "id": "call_fallback"})
+            elif match_obj:
+                # Sometimes there are multiple JSON objects separated by newlines
+                # but if regex matches one big block, we try parsing it
+                try:
+                    data = json.loads(match_obj.group(0))
+                    if "name" in data and "arguments" in data:
+                        tool_calls.append({"name": data["name"], "args": data["arguments"], "id": "call_fallback"})
+                except json.JSONDecodeError:
+                    # Fallback to line by line regex matching
+                    for line in content_str.split('\n'):
+                        m = re.search(r'\{.*\}', line)
+                        if m:
+                            data = json.loads(m.group(0))
+                            if "name" in data and "arguments" in data:
+                                tool_calls.append({"name": data["name"], "args": data["arguments"], "id": "call_fallback"})
+        except Exception as e:
+            print(f"[Debug] Fallback parse failed: {e}")
+            print(f"[Debug] Raw content was: {content_str}")
+
     # 2. Exécution dynamique de n'importe quelle tool appelée par le LLM
-    if response.tool_calls:
-        print(f"\n[Développeur] L'Agent a déclenché {len(response.tool_calls)} action(s).")
-        for tool_call in response.tool_calls:
+    if tool_calls:
+        print(f"\n[Développeur] L'Agent a déclenché {len(tool_calls)} action(s).")
+        for tool_call in tool_calls:
             tool_name = tool_call["name"]
             args = tool_call["args"]
             

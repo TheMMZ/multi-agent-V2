@@ -30,18 +30,45 @@ def deployeur_agent_node(state: ProjectState) -> dict:
     
     deployment_summary = {}
     
-    if response.tool_calls:
-        for tool_call in response.tool_calls:
+    import json
+    
+    # Extraction des tool_calls
+    tool_calls = response.tool_calls
+    
+    # Fallback pour Qwen/Ollama si les outils sont retournés dans le content au lieu de tool_calls
+    if not tool_calls and response.content:
+        content_str = response.content.strip()
+        # Qwen renvoie souvent plusieurs objets JSON par ligne ou dans un format texte
+        try:
+            # On essaie de séparer par des retours à la ligne si plusieurs JSON
+            lines = content_str.split('\n')
+            for line in lines:
+                line = line.strip()
+                if line.startswith('{') and line.endswith('}'):
+                    data = json.loads(line)
+                    if "name" in data and "arguments" in data:
+                        tool_calls.append({
+                            "name": data["name"],
+                            "args": data["arguments"],
+                            "id": "call_fallback"
+                        })
+        except Exception as e:
+            print(f"[Debug] Fallback parse failed: {e}")
+    
+    if tool_calls:
+        for tool_call in tool_calls:
             # Exécuter l'outil d'écriture (requirements.txt, etc.)
             if tool_call["name"] == "write_file_to_disk":
                 write_file_to_disk.invoke(tool_call["args"])
             
             # Exécuter l'outil de déploiement réel
             if tool_call["name"] == "deploy_local_and_verify":
-                print("⚙️ Exécution du déploiement local et ping de l'URL...")
+                print("[Execution] Lancement du deploiment local et ping de l'URL...")
                 result_verification = deploy_local_and_verify.invoke(tool_call["args"])
-                print(f"\n[Résultat Déploiement] :\n{result_verification}")
+                print(f"\n[Resultat Deploiement] :\n{result_verification}")
                 deployment_summary["deployment_report"] = result_verification
+    else:
+        print("[Warning] Aucun outil n'a été appelé par l'agent.")
                 
     return {
         "deployment_artifacts": deployment_summary,

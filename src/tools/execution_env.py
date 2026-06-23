@@ -27,7 +27,7 @@ def deploy_local_and_verify(file_relative_path: str = "app.py", port: int = 5000
         time.sleep(3)
         
         # Vérifier l'accessibilité via une requête HTTP simple
-        print(f"🔍 [Tool Déploiement] Tentative de connexion à {url}...")
+        print(f"[Tool Deploiement] Tentative de connexion a {url}...")
         response = urllib.request.urlopen(url, timeout=5)
         
         if response.status == 200:
