@@ -17,6 +17,23 @@ Ce système intègre une **Interface Web Streamlit** permettant :
 - D'intervenir au milieu du flux d'exécution grâce à la fonctionnalité **Human-in-the-Loop**. 
 - Après chaque inspection du Testeur, le graphe se met en pause. Vous pouvez lire le rapport du Testeur et ajouter vos propres instructions manuelles pour forcer le Développeur à modifier certains aspects.
 
+## Structure du Projet
+
+```text
+📦 multi-agent-V2
+ ┣ 📂 src
+ ┃ ┣ 📂 core          # Configuration globale (clés API, sélection du modèle LLM)
+ ┃ ┣ 📂 engine        # Logique LangGraph (graph_builder, workflow)
+ ┃ ┣ 📂 nodes         # Scripts des 4 agents (concepteur, developpeur, testeur, deployeur)
+ ┃ ┣ 📂 state         # Définition du ProjectState partagé entre les agents
+ ┃ ┣ 📂 tools         # Outils d'écriture de fichiers et de déploiement
+ ┃ ┗ 📜 main.py       # Point d'entrée en ligne de commande (CLI)
+ ┣ 📜 app_ui.py       # Application Web principale (Streamlit)
+ ┣ 📜 .env.example    # Modèle pour les variables d'environnement (Google/Ollama)
+ ┣ 📜 requirements-system.txt # Dépendances requises pour lancer le moteur multi-agent
+ ┗ 📜 README.md       # Documentation
+```
+
 ## Guide de Démarrage (Pour les nouveaux utilisateurs)
 
 Si vous venez de cloner ce projet sur votre machine, suivez ces étapes exactes pour lancer l'application :
