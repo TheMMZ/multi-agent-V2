@@ -1,0 +1,7 @@
+langchain-google-genai
+langchain-ollama
+langgraph
+streamlit
+python-dotenv
+flask
+flask-cors
