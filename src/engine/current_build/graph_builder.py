@@ -17,7 +17,7 @@ def route_after_test(state: ProjectState) -> str:
         print("\n[Router] Code approuvé ! Passage à l'étape Déploiement.")
         return "deployeur"  
 
-def build_my_graph():
+def build_my_graph(checkpointer=None, mode="Limited"):
     
     workflow = StateGraph(ProjectState)
     
@@ -42,4 +42,7 @@ def build_my_graph():
     
     workflow.add_edge("deployeur", END)
     
-    return workflow.compile()
+    if mode == "Limited (Human-in-the-loop)":
+        return workflow.compile(checkpointer=checkpointer, interrupt_after=["testeur"])
+    else:
+        return workflow.compile(checkpointer=checkpointer)

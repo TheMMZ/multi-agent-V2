@@ -1,6 +1,10 @@
 import sys
 import os
 
+# Fix for Windows console unicode printing
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # Add the root directory to sys.path so we can import from src
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -9,9 +13,12 @@ from src.engine.current_build.workflow import run_agentic_workflow
 if __name__ == "__main__":
     print("=== DÉMARRAGE DU SYSTÈME MULTI-AGENT ===")
     
-    # Define the user's request
-    user_request = "Une application web simple avec une page HTML, du CSS pour le style, et un script JS qui affiche 'Bonjour le monde' dans la console."
-    
+    # Define the user's request from CLI arguments if provided
+    if len(sys.argv) > 1:
+        user_request = " ".join(sys.argv[1:])
+    else:
+        user_request = "Une application web simple avec une page HTML, du CSS pour le style, et un script JS qui affiche 'Bonjour le monde' dans la console."
+        print(f"⚠️ Aucun prompt fourni. Utilisation du prompt par défaut : '{user_request}'")
     # Run the full workflow
     try:
         final_state = run_agentic_workflow(
