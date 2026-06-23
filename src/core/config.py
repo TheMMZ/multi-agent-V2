@@ -1,17 +1,20 @@
 import os
-from langchain_ollama import ChatOllama
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-def get_slm_model(model_name: str = "qwen2.5-coder") -> ChatOllama:
-  
-    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    
+load_dotenv()
+
+def get_slm_model(model_name: str = "gemini-2.5-flash") -> ChatGoogleGenerativeAI:
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("Erreur : GOOGLE_API_KEY introuvable dans le fichier .env")
+        
     try:
-        return ChatOllama(
+        return ChatGoogleGenerativeAI(
             model=model_name,
-            temperature=0.0,         
-            base_url=ollama_base_url,
-            num_predict=4096,        
-            timeout=180              
+            temperature=0.0,
+            max_output_tokens=8192,
+            google_api_key=api_key
         )
     except Exception as e:
-        raise RuntimeError(f"Impossible de connecter ChatOllama sur {ollama_base_url}. Erreur: {str(e)}")
+        raise RuntimeError(f"Impossible d'initialiser Gemini. Erreur: {str(e)}")
